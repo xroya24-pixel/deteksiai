@@ -1,7 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { ThemeProvider } from "@/components/theme-provider";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,20 +15,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "DeteksiAI - Analisis Tulisan AI",
-  description: "Deteksi apakah sebuah artikel atau tulisan dibuat oleh AI, lengkap dengan contoh perbaikannya.",
+  title: "DeteksiAI - Deteksi & Humanisasi Tulisan AI",
+  description:
+    "Ketahui apakah sebuah tulisan dibuat oleh AI, lalu ubah menjadi lebih alami, profesional, dan mudah dipahami manusia.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-white font-sans text-zinc-900">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Navbar />
+          <main className="min-h-screen pt-16">{children}</main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );
