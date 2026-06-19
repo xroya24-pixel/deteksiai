@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle, FileText, Sparkles } from "lucide-react";
+import { AlertTriangle, Sparkles, FileText, Info } from "lucide-react";
 
 export default function SuggestionItem({ original, score, issues, suggestion }) {
   return (
@@ -41,7 +41,7 @@ export default function SuggestionItem({ original, score, issues, suggestion }) 
         </div>
       )}
 
-      {/* Suggestion */}
+      {/* Suggestion - always show when there are issues */}
       {suggestion && suggestion !== original && (
         <div className="ml-7 flex items-start gap-3 rounded-lg bg-emerald-500/10 px-3 py-2">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-500" />
@@ -49,18 +49,25 @@ export default function SuggestionItem({ original, score, issues, suggestion }) 
             <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               Saran Perbaikan
             </p>
-            <p className="text-sm leading-relaxed text-foreground/80">
+            <p className="mt-0.5 text-sm leading-relaxed text-foreground/80">
               {suggestion}
             </p>
           </div>
         </div>
       )}
 
-      {/* No suggestion needed */}
-      {(!suggestion || suggestion === original) && issues.length === 0 && (
-        <div className="ml-7 flex items-center gap-2 text-xs text-emerald-500">
-          <CheckCircle className="size-3" />
-          Tidak ada masalah
+      {/* When there are issues but no auto-suggestion available */}
+      {!suggestion && issues.length > 0 && (
+        <div className="ml-7 flex items-start gap-3 rounded-lg bg-amber-500/10 px-3 py-2">
+          <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
+          <div>
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+              Perlu Direvisi
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Kalimat ini terdeteksi memiliki pola AI. Coba gunakan Humanizer untuk perbaikan otomatis.
+            </p>
+          </div>
         </div>
       )}
     </div>

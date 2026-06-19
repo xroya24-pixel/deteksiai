@@ -1,3 +1,5 @@
+import { humanizeText } from "./humanizer";
+
 const AI_PHRASES = [
   "delve into", "it's worth noting", "landscape of", "a myriad of",
   "it is important to", "it is crucial to", "it is essential to",
@@ -64,9 +66,23 @@ function checkFormality(sentence) {
   if (longWords.length > 0) {
     issues.push({
       type: "formality",
-      label: `Kata terlalu formal: "${longWords.slice(0, 3).join('", "')}"`,
+      label: `Kata terlalu formal/panjang: "${longWords.slice(0, 3).join('", "')}"`,
     });
   }
+
+  const formalMarkers = [
+    "however", "therefore", "thus", "hence", "nonetheless",
+    "nevertheless", "notwithstanding", "consequently",
+    "oleh karena itu", "oleh sebab itu", "dengan demikian",
+  ];
+  for (const marker of formalMarkers) {
+    const re = new RegExp(`\\b${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    if (re.test(sentence)) {
+      issues.push({ type: "transition", label: `Kata transisi formal: "${marker}"` });
+      break;
+    }
+  }
+
   return issues;
 }
 
@@ -78,71 +94,42 @@ function estimateSentenceScore(sentence) {
   const wordCount = tokens.length;
 
   let score = 0;
-  if (phrases.length > 0) score += Math.min(40, phrases.length * 15);
+  if (phrases.length > 0) score += Math.min(50, phrases.length * 20);
   if (punctIssues.length > 0) score += Math.min(15, punctIssues.length * 8);
-  if (formalIssues.length > 0) score += 10;
-  if (wordCount > 30) score += 10;
+  if (formalIssues.length > 0) score += 15;
+  if (wordCount > 25) score += 10;
   if (wordCount < 3) score = 0;
 
-  const allIssues = [...phrases.map(p => ({ type: "phrase", label: `Frasa AI: "${p}"` })), ...punctIssues, ...formalIssues];
-  if (wordCount > 30) allIssues.push({ type: "length", label: "Kalimat terlalu panjang" });
-  if (wordCount < 5 && wordCount > 1) allIssues.push({ type: "stub", label: "Kalimat terlalu pendek/kurang konteks" });
+  const allIssues = [
+    ...phrases.map(p => ({ type: "phrase", label: `Frasa AI: "${p}"` })),
+    ...punctIssues,
+    ...formalIssues,
+  ];
+  if (wordCount > 25) allIssues.push({ type: "length", label: "Kalimat terlalu panjang" });
 
   return { score: Math.min(100, Math.round(score)), issues: allIssues, wordCount };
-}
-
-function getFormalitySuggestion(sentence) {
-  const replacements = {
-    "merupakan": "adalah",
-    "sehingga": "jadi",
-    "sebagaimana": "seperti",
-    "sehubungan dengan": "tentang",
-    "seiring dengan": "bersama",
-    "oleh karena itu": "makanya",
-    "dengan demikian": "jadi",
-    "maka dari itu": "jadi",
-    "berdasarkan": "dari",
-    "memerlukan": "butuh",
-    "memiliki": "punya",
-    "terdapat": "ada",
-    "menggunakan": "pake",
-    "mengalami": "nurun/naik",
-    "melakukan": "ngerjain",
-    "merupakan salah satu": "termasuk",
-    "tidak dapat dipungkiri": "memang",
-    "dapat disimpulkan": "simpelnya",
-    "oleh sebab itu": "makanya",
-  };
-  let result = sentence;
-  for (const [formal, casual] of Object.entries(replacements)) {
-    const re = new RegExp(formal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    result = result.replace(re, casual);
-  }
-  return result;
 }
 
 export function analyzeSentence(sentence) {
   const cleanSentence = sentence.trim();
   if (!cleanSentence || cleanSentence.length < 5) {
-    return { original: cleanSentence, score: 0, issues: [], suggestion: cleanSentence };
+    return { original: cleanSentence, score: 0, issues: [], suggestion: null, wordCount: 0 };
   }
 
   const { score, issues, wordCount } = estimateSentenceScore(cleanSentence);
 
-  if (score < 30) {
-    return {
-      original: cleanSentence,
-      score,
-      issues: [],
-      suggestion: null,
-      wordCount,
-    };
+  if (score < 20) {
+    return { original: cleanSentence, score, issues: [], suggestion: null, wordCount };
   }
 
-  let suggestion = getFormalitySuggestion(cleanSentence);
-  if (suggestion === cleanSentence) {
-    suggestion = cleanSentence;
-  }
+  const humanized = humanizeText(cleanSentence, {
+    useStarters: true,
+    useContractions: true,
+    useBreakLong: false,
+    useRemoval: true,
+  });
+
+  const suggestion = humanized !== cleanSentence ? humanized : null;
 
   return { original: cleanSentence, score, issues, suggestion, wordCount };
 }
@@ -150,5 +137,5 @@ export function analyzeSentence(sentence) {
 export function analyzeSuggestions(text) {
   if (!text || text.trim().length < 20) return [];
   const sentences = getSentences(text);
-  return sentences.map(s => analyzeSentence(s)).filter(s => s.score >= 30);
+  return sentences.map(s => analyzeSentence(s)).filter(s => s.score >= 20);
 }
